@@ -124,77 +124,11 @@ functions:
           request:
             template:
               application/json: '$input.body'
-  dayof-events:
-    handler: src/cal_announce.google_cal
-    events:
-      - http:
-          path: dayof-events
-          integration: lambda
-          method: get
-          cors: true
-          request:
-            template:
-              application/json: '$input.body'
-  dayof-slack:
-    handler: src/cal_announce.slack_announce
-    events:
-      - http:
-          path: dayof-slack
-          integration: lambda
-          method: get
-          cors: true
-          request:
-            template:
-              application/json: '$input.body'
   read:
     handler: src/read.read_info
     events:
       - http:
           path: read
-          integration: lambda
-          method: post
-          cors: true
-          request:
-            template:
-              application/json: '$input.body'
-  # reimburse:
-  #   handler: src/reimburse.compute_all_reimburse
-  #   events:
-  #     - http:
-  #         path: reimburse
-  #         integration: lambda
-  #         method: post
-  #         cors: true
-  #         request:
-  #           template:
-  #             application/json: '$input.body'
-  resume:
-    handler: src/resume.resume
-    events:
-      - http:
-          path: resume
-          integration: lambda
-          method: post
-          cors: true
-          request:
-            template:
-              application/json: '$input.body'
-  waiver:
-    handler: src/waiver.waiver
-    events:
-      - http:
-          path: waiver
-          integration: lambda
-          method: post
-          cors: true
-          request:
-            template:
-              application/json: '$input.body'
-  send-emails:
-    handler: src/use_sparkpost.send_emails
-    events:
-      - http:
-          path: send-emails
           integration: lambda
           method: post
           cors: true
@@ -245,13 +179,3 @@ functions:
           request:
             template:
               application/json: '$input.body'
-  slack-dm:
-    handler: src/slack.generate_dm_link
-    -http:
-      path: slack-dm
-      integration: lambda
-      method: post
-      cors: true
-      request:
-        template:
-          application/json: '$input.body'
