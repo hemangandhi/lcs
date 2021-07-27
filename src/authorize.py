@@ -106,10 +106,6 @@ def authorize_then_consume(event, context):
     "additionalFields": False
 })
 def create_user(event, context):
-    # if registration is closed and a link is not given, we complain
-    if not is_registration_open() and 'link' not in event:
-        return util.add_cors_headers({"statusCode": 403, "body": "Registration Closed!"})
-
     # extracts the email and password
     u_email = event['email'].lower()
     password = event['password']
@@ -143,25 +139,13 @@ def create_user(event, context):
             "organizer": False,
             "director": False
         },
-        "votes": 0,
         "password": password,
-        "github": event.get("github", ''),
-        "major": event.get("major", ''),
-        "short_answer": event.get("short_answer", ''),
-        "shirt_size": event.get("shirt_size", ''),
         "first_name": event.get("first_name", ''),
         "last_name": event.get("last_name", ''),
         "dietary_restrictions": event.get("dietary_restrictions", ''),
         "special_needs": event.get("special_needs", ''),
         "date_of_birth": event.get("date_of_birth", ''),
-        "school": event.get("school", ''),
-        "grad_year": event.get("grad_year", ''),
         "gender": event.get("gender", ''),
-        "registration_status": event.get("registration_status", "unregistered"),
-        "level_of_study": event.get("level_of_study", ''),
-        "day_of": {
-            "checkIn": False
-        }
     }
 
     # inserts the newly created user into the collection
@@ -169,18 +153,3 @@ def create_user(event, context):
 
     # calls the function to also consume any links provided
     return authorize_then_consume(event, context)
-
-
-def is_registration_open():
-    """
-    Function used to check if registration is open using the timezone and registration dates specified within the config
-    """
-    now = datetime.now(config.TIMEZONE)
-    # registration dates are specified as nested arrays, with each element of the outer array being an array of two
-    # elements
-    # each of these inner arrays specifies the start of the period as first element and end as the second element
-    # if the instance right now is within any of those valid periods, registration is essentially open
-    for period in config.REGISTRATION_DATES:
-        if period[0] <= now <= period[1]:
-            return True
-    return False

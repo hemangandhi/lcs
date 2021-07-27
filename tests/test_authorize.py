@@ -27,49 +27,8 @@ def test_bad_email():
     auth = authorize.authorize(usr_dict, None)
     assert check_by_schema(schema_for_http(403, {"type": "string", "const": "invalid email,hash combo"}), auth)
 
-
-def test_registration_open():
-    # born too late to explore the planet
-    config.REGISTRATION_DATES = [[
-        datetime.now(config.TIMEZONE) + timedelta(hours=-2),
-        datetime.now(config.TIMEZONE) + timedelta(hours=-1)
-    ]]
-    assert not authorize.is_registration_open()
-
-    # born too early to explore the universe
-    config.REGISTRATION_DATES = [[
-        datetime.now(config.TIMEZONE) + timedelta(hours=+1),
-        datetime.now(config.TIMEZONE) + timedelta(hours=+2)
-    ]]
-    assert not authorize.is_registration_open()
-
-    # born just in time to register for HackRU
-    config.REGISTRATION_DATES = [[
-        datetime.now(config.TIMEZONE) + timedelta(hours=-1),
-        datetime.now(config.TIMEZONE) + timedelta(hours=+1)
-    ]]
-    assert authorize.is_registration_open()
-
-    # day of
-    config.REGISTRATION_DATES = [
-        [datetime.now(config.TIMEZONE) + timedelta(hours=-6),
-         datetime.now(config.TIMEZONE) + timedelta(hours=-5)],
-        [datetime.now(config.TIMEZONE) + timedelta(hours=-1),
-         datetime.now(config.TIMEZONE) + timedelta(hours=+1)],
-    ]
-    assert authorize.is_registration_open()
-
-
 @pytest.mark.run(order=1)
 def test_creation():
-    # open registration
-    if not authorize.is_registration_open():
-        config.REGISTRATION_DATES = [
-            [datetime.now(config.TIMEZONE) + timedelta(hours=-6),
-             datetime.now(config.TIMEZONE) + timedelta(hours=+6)]
-        ]
-    assert authorize.is_registration_open()
-
     user_email = "creep@radiohead.ed"
     passwd = "love"
     usr_dict = {'email': user_email, 'password': passwd}
@@ -94,15 +53,6 @@ def test_creation_fail_cases():
     auth = authorize.create_user(usr_dict, None)
     # we guarantee the string value here since we produce the error message
     assert check_by_schema(schema_for_http(400, {"type": "string", "const": "Duplicate user!"}), auth)
-
-    # Fail if registration is closed
-    config.REGISTRATION_DATES = [[
-        datetime.now(config.TIMEZONE) + timedelta(hours=-2),
-        datetime.now(config.TIMEZONE) + timedelta(hours=-1)
-    ]]
-    assert not authorize.is_registration_open()
-    auth = authorize.create_user(usr_dict, None)
-    assert check_by_schema(schema_for_http(403, {"statusCode": 403, "body": "Registration Closed!"}), auth)
 
 
 @pytest.mark.run(order=2)
@@ -132,14 +82,6 @@ def delete_user():
 
 @pytest.mark.run(order=5)
 def test_multi_tokens():
-    # open registration
-    if not authorize.is_registration_open():
-        config.REGISTRATION_DATES = [
-            [datetime.now(config.TIMEZONE) + timedelta(hours=-6),
-             datetime.now(config.TIMEZONE) + timedelta(hours=+6)]
-        ]
-    assert authorize.is_registration_open()
-
     user_email = "creep@radiohead.ed"
     passwd = "love"
     usr_dict = {'email': user_email, 'password': passwd}

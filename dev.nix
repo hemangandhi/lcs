@@ -4,11 +4,13 @@
 with import <nixpkgs> {};
 
 stdenv.mkDerivation {
-  name = "sukuraberu-dev-env";
+  name = "lcsh-dev-env";
   buildInputs = [
     # Python
     python36
     gcc
     libffi
+    # Mongo
+    mongodb
   ];
 }

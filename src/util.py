@@ -1,6 +1,7 @@
 import config
 from functools import wraps
 from pymongo import MongoClient
+import urllib.parse
 
 
 def add_cors_headers(resp):
@@ -38,7 +39,9 @@ def get_db():
     """
     global _cached
     if not _cached:
-        _cached = MongoClient(config.DB_URI).get_database()
+        username = urllib.parse.quote_plus(config.DB_USER)
+        password = urllib.parse.quote_plus(config.DB_PASSWORD)
+        _cached = MongoClient(config.DB_URI.format(username, password)).test
     return _cached
 
 
