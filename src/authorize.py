@@ -129,16 +129,6 @@ def create_user(event, context):
     # the goal here is to have a complete user; where ever a value is not provided, we put the empty string
     doc = {
         "email": u_email,
-        # we enforce that the user is a hacker
-        "role": {
-            "hacker": True,
-            "volunteer": False,
-            "judge": False,
-            "sponsor": False,
-            "mentor": False,
-            "organizer": False,
-            "director": False
-        },
         "password": password,
         "first_name": event.get("first_name", ''),
         "last_name": event.get("last_name", ''),

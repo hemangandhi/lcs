@@ -4,9 +4,6 @@ import googlemaps as gm
 
 from src.schemas import *
 
-
-
-
 @ensure_schema({
     "type": "object",
     "properties": {
@@ -22,94 +19,20 @@ def validate(event, context, user=None):
     return {"statusCode": 200, "body": user, "isBase64Encoded": False}
 
 
-def validate_updates(user, updates, auth_usr=None):
+def validate_updates(user, updates):
     """
     Ensures that the user is being updated in a legal way. Invariants are explained at line 116 for most fields and
     65 for the registration_status in detail.
     """
 
     # if the user updating is not provided, we assume the user's updating themselves.
-    if auth_usr is None:
-        auth_usr = user
+    auth_usr = user
 
     # quick utilities
     # rejects all updates
     def say_no(x, y, z):
         return False
 
-    # rejects updates from anyone BUT organizer and director
-    def say_no_to_non_admin(x, y, z):
-        return auth_usr['role']['organizer'] or auth_usr['role']['director']
-
-    # rejects updates from hacker
-    def say_no_to_just_hacker(x, y, z):
-        return auth_usr['role']['organizer'] or auth_usr['role']['director'] or auth_usr['role']['volunteer']
-
-    # creates a Google Map client
-    gmaps = gm.Client(config.MAPS_API_KEY)
-
-    def check_addr(y):
-        try:
-            location = gmaps.geocode(y)
-            return True
-        except gm.exceptions.ApiError:
-            return False
-
-    def check_registration(old, new, op):
-        """
-        Ensures that an edge exists in the user state graph and that the edge can be traversed by this mode of update.
-        "True" edges are traversible by the user or through an admin whereas "False" ones require admin intervention.
-        We only '$set' this field.
-        """
-        state_graph = {
-            "unregistered": {  # unregistered = did not fill out all of application.
-                "registered": True  # they can fill out the application.
-            },
-            "registered": {  # they have filled out the application.
-                # all transitions out of this are through the voting
-                # system are require admins to have voted.
-                "rejected": False,
-                "confirmation": False,
-                "waitlist": False
-            },
-            "rejected": {  # the user is "rejected". REMEMBER: they see "pending"
-                # only an admin may check a user in.
-                "checked-in": False
-            },
-            "confirmation": {  # This is when a user may or may not RSVP.
-                # they get to choose if they're coming or not.
-                "coming": True,
-                "not-coming": True
-            },
-            "coming": {  # they said they're coming.
-
-                # they may change their mind, but only we can finalize things.
-                "not-coming": True,
-                "confirmed": False,
-                "checked-in": False  # TODO: remove when there are many waves
-            },
-            "not-coming": {  # the user said they ain't comin'.
-
-                # They can always make a better decision. But only we can finalize their poor choice.
-                "coming": True,
-                "waitlist": False
-            },
-            "waitlist": {  # They were waitlisted. (Didn't RSVP, or not-coming.)
-                # Only we can check them in.
-                "checked-in": False
-            },
-
-            "confirmed": {  # They confirmed attendance and are guaranteed a spot!
-                # But only we can check them in.
-                "checked-in": False,
-                # bailing at the last minute
-                "waitlist": True
-            }
-        }
-        # the update is valid if it is an edge traversible in the current mode of update.
-        return old in state_graph and new in state_graph[old] \
-            and (state_graph[old][new] or say_no_to_non_admin(1, 2, 3)) \
-            and op == "$set"
 
     # For all fields, we map a regex to a function of the old and new value and the operator being used. The function
     # determines the validity of the update. We "and" all the regexes, so an update is valid for all regexes it matches,
@@ -117,36 +40,14 @@ def validate_updates(user, updates, auth_usr=None):
     validator = {
         # this is a Mongo internal. DO NOT TOUCH.
         '_id': say_no,
-        #TODO: we have to figure out "forgot password"
         'password': say_no,
         # no hacks on the role object
         '^role$': say_no,
-        # can't me self-made judge?
-        'role\\.judge': say_no_to_non_admin, #TODO: do magic links need these?
-        # can't unmake hacker
-        'role\\.hacker': say_no_to_non_admin,
-        # can't self-make organizer or director
-        'role\\.director': say_no_to_non_admin,
-        'role\\.organizer': say_no_to_non_admin,
         # can't change email
         'email': say_no,
         # can't change your own votes
-        'votes': say_no_to_non_admin,
-        'votes_from': say_no_to_non_admin,
-        'skipped_users': say_no_to_non_admin,
-        # or MLH info
-        'mlh': say_no,
-        # no destroying the day-of object
-        'day_of': say_no_to_just_hacker,
-        'day_of\\.[A-Za-z1-2_]+': say_no_to_just_hacker,
-        'registration_status': check_registration,
         # auth tokens are never given access
         'token': say_no,
-        # travel info
-        'travelling_from\\.mode': lambda x, y, z: y in ('bus', 'train', 'car', 'plane'),
-        'travelling_from\\.formatted_addr': lambda x, y, z: check_addr(y),
-        'slack_id': lambda x, y, z: re.match(r"^[UW][A-Z0-9]{2,}$", y) is not None,
-
     }
 
     def find_dotted(key):
@@ -224,9 +125,6 @@ def update(event, context, auth_user):
     if event['user_email'] == auth_user['email']:
         # save a query in the nice case
         results = auth_user
-    # if the user is an admin, they may modify any user.
-    elif auth_user['role']['organizer'] or auth_user['role']['director']:
-        results = user_coll.find_one({"email": event['user_email']})
     else:
         return {"statusCode": 403, "body": "Permission denied"}
 
