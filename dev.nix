@@ -4,7 +4,7 @@
 with import <nixpkgs> {};
 
 stdenv.mkDerivation {
-  name = "lcsh-dev-env";
+  name = "les-dev-env";
   buildInputs = [
     # Python
     python36
