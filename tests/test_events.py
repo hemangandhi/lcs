@@ -7,5 +7,3 @@ from src import authorize
 
 import pytest
 import mock
-
-

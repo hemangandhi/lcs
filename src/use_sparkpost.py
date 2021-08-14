@@ -16,7 +16,7 @@ emails = SparkPost(config.SPARKPOST_KEY)
     "required": ["token"]
 })
 @ensure_logged_in_user()
-@ensure_role([['director']])
+@ensure_admin_user()
 def list_all_templates(event, context, user):
     """
     Gets a list of all the templates iff the
@@ -99,7 +99,7 @@ def send_to_emails(event, context, usr):
     above.
     """
     # disallow non-director users from sending emails to anyone but themselves
-    if not usr['role']['director'] and event.get('recipients', []) != [usr['email']]:
+    if not usr['is_admin'] and event.get('recipients', []) != [usr['email']]:
         return {'statusCode': 400, 'body': "Not authorized to send emails!"}
     else:  # note, below this point, we can assume usr is a director or that the recipients list has length 1.
         # recall that a non-director cannot have this: they must have "recipients"

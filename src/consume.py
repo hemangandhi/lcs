@@ -17,14 +17,7 @@ def promotion_link(event, maglinkobj, user=None):
     Function used to update an user based on a magic link
     """
     user_coll = util.coll('users')
-    # grab the permissions object
-    permissions = maglinkobj['permissions']
-    # for every permission of the user, other than hacker (which is already given upon creation), update the
-    # relevant boolean within the database
-    for i in permissions:
-        if i != 'hacker':
-            role_bit = 'role.' + i
-            user_coll.update_one({'email': user['email']}, {'$set': {role_bit: True}})
+    user_coll.update_one({'email': user['email']}, {'$set': {is_admin: True}})
 
     return {"statusCode": 200, "body": "Successfully updated your role"}
 

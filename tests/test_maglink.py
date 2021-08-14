@@ -42,7 +42,7 @@ def test_director_link(mock_send_email):
     target_perms = ['director']
 
     # Add director role to the test user
-    util.coll('users').update_one({'email': user_email}, {'$set': {'role.director': True}})
+    util.coll('users').update_one({'email': user_email}, {'$set': {'is_admin': True}})
 
     auth = authorize.authorize({'email': user_email, 'password': user_pass}, None)
     token = auth['body']['token']
@@ -52,7 +52,7 @@ def test_director_link(mock_send_email):
     assert util.coll('magic links').find_one({'link': link}) is not None
 
     # Remove the role after we're done
-    util.coll('users').update_one({'email': user_email}, {'$set': {'role.director': False}})
+    util.coll('users').update_one({'email': user_email}, {'$set': {'is_admin': False}})
 
 
 @pytest.mark.run(order=3)

@@ -62,7 +62,7 @@ def user_read(event, context, user):
     return {"statusCode": 200, "body": [user]}
 
 
-@ensure_role([['director', 'organizer']], on_failure=lambda e, c, u, *a: user_read(e, c, u))
+@ensure_admin_user(on_failure=lambda e, c, u, *a: user_read(e, c, u))
 def organizer_read(event, context, user):
     """
     Function responsible for performing an organizer query. In-case of insufficient permissions, falls back on user_read
@@ -86,7 +86,7 @@ def organizer_read(event, context, user):
     "required": ["query"]
 })
 @ensure_logged_in_user(on_failure=lambda e, c, u, *a: public_read(e, c))
-@ensure_role([['director']], on_failure=lambda e, c, u, *a: organizer_read(e, c, u))
+@ensure_admin_user(on_failure=lambda e, c, u, *a: organizer_read(e, c, u))
 def read_info(event, context, user=None):
     """
     We allow for an arbitrary mongo query to be passed in.
