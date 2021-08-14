@@ -40,12 +40,11 @@ def validate_updates(user, updates):
     validator = {
         # this is a Mongo internal. DO NOT TOUCH.
         '_id': say_no,
+        # use magiclinks to touch these
         'password': say_no,
-        # no hacks on the role object
-        '^role$': say_no,
+        'is_admin': say_no,
         # can't change email
         'email': say_no,
-        # can't change your own votes
         # auth tokens are never given access
         'token': say_no,
     }

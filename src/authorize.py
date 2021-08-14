@@ -86,21 +86,12 @@ def authorize_then_consume(event, context):
         "email": {"type": "string", "format": "email"},
         "password": {"type": "string"},
         "link": {"type": "string"},
-        "github": {"type": "string"},
-        "major": {"type": "string"},
-        "short_answer": {"type": "string"},
-        "shirt_size": {"type": "string"},
         "first_name": {"type": "string"},
         "last_name": {"type": "string"},
         "dietary_restrictions": {"type": "string"},
         "special_needs": {"type": "string"},
         "date_of_birth": {"type": "string"},
-        "school": {"type": "string"},
-        "grad_year": {"type": "string"},
         "gender": {"type": "string"},
-        "level_of_study": {"type": "string"},
-        "ethnicity": {"type": "string"},
-        "phone_number": {"type": "string"}
     },
     "required": ["email", "password"],
     "additionalFields": False
@@ -130,6 +121,7 @@ def create_user(event, context):
     doc = {
         "email": u_email,
         "password": password,
+        "is_admin": False, # only way to become an admin is a magic link. See consume.promotion_link for more.
         "first_name": event.get("first_name", ''),
         "last_name": event.get("last_name", ''),
         "dietary_restrictions": event.get("dietary_restrictions", ''),

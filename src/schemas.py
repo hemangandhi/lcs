@@ -56,14 +56,14 @@ def ensure_logged_in_user(token_key='token', on_failure=lambda e, c, m, *a: {"st
     return rapper
 
 
-def ensure_role(roles, on_failure=lambda e, c, u, *a: {"statusCode": 403, "body": "User does not have privileges."}):
+def ensure_admin_user(on_failure=lambda e, c, u, *a: {"statusCode": 403, "body": "User does not have privileges."}):
     """
     Wrapper function used to validate that a user has at least 1 role within each subset of the set of roles
     """
     def ensure_auth_user(fn):
         @wraps(fn)
         def wrapt(event, context, user, *args):
-            if all(any(user['role'].get(role, False) for role in options) for options in roles):
+            if user.get('is_admin', False):
                 return fn(event, context, user, *args)
             return on_failure(event, context, user, *args)
         return wrapt
