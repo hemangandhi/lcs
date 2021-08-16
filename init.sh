@@ -8,7 +8,7 @@ source venv/bin/activate
 
 pip install -r requirements.txt
 mongod --dbpath db/&
-MONGO_PID = $!
+MONGO_PID=$!
 
 echo "db.createUser({user: 'les-user', pwd: 'ludicrous-event-system', roles = ['readWrite']})" | mongo
 
@@ -19,5 +19,4 @@ kill $MONGO_PID;
 
 echo "Everything looks OK."
 echo "Run 'mongod' and 'python main.py' in separate shells to start a flask server."
-echo $MONGO_PID
 # or fork, if you roll that way.

@@ -1,7 +1,7 @@
 from src.schemas import *
 from src import util
 
-from datetime import strptime
+from datetime import datetime
 from functools import wraps
 
 from bson.objectid import ObjectId
@@ -19,8 +19,8 @@ Event schema:
 """
 
 def validate_times_in_dict(event):
-    parsed_start = strptime(event['start_date'], "%Y-%m-%dT%H:%M:%SZ%z")
-    parsed_end = strptime(event['end_date'], "%Y-%m-%dT%H:%M:%SZ%z")
+    parsed_start = datetime.strptime(event['start_date'], "%Y-%m-%dT%H:%M:%SZ%z")
+    parsed_end = datetime.strptime(event['end_date'], "%Y-%m-%dT%H:%M:%SZ%z")
     if parsed_end > parsed_start:
         raise ValueError("Events ends before it starts")
     return parsed_start, parsed_end
@@ -69,6 +69,8 @@ def ensure_event_with_id(id_key="event_id", kw_arg_key=None,
                 return fn(event, context, args[0], found_event, *args[1:])
             else:
                 return fn(event, context, *args, **{kw_arg_key: found_event})
+        return wrapped
+    return wrapper
 
 @ensure_schema({
     "type": "object",
@@ -109,11 +111,12 @@ def create_event(event, context):
         parsed_start, parsed_end = validate_times_in_dict(event)
     except Exception as e:
         return {"statusCode": 400, "body": str(e)}
+
     doc = {
         "name": event["name"],
         "start_name": parsed_start,
         "end_name": parsed_end,
-        "event_type": event["event_type"],
+        "event_type": event["event_type"]
     }
     new_id = str(util.coll('events').insert_one(doc).inserted_id)
     doc["_id"] = new_id
@@ -162,7 +165,7 @@ def create_event(event, context):
 @ensure_event_with_id()
 def update_event(event, context, user, found_event):
     times = {
-        "start_time": event['updates'].get('$set', {}).get('start_time', found_event['start_time'])
+        "start_time": event['updates'].get('$set', {}).get('start_time', found_event['start_time']),
         "end_time": event['updates'].get('$set', {}).get('end_time', found_event['end_time'])
     }
     try:
