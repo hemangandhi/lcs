@@ -18,13 +18,24 @@ Event schema:
 }
 """
 
+TIMESTAMP_FORMAT_CODE = "%Y-%m-%dT%H:%M:%SZ%z"
+
 def validate_times_in_dict(event):
-    parsed_start = datetime.strptime(event['start_date'], "%Y-%m-%dT%H:%M:%SZ%z")
-    parsed_end = datetime.strptime(event['end_date'], "%Y-%m-%dT%H:%M:%SZ%z")
-    if parsed_end > parsed_start:
+    parsed_start = datetime.strptime(event['start_date'], TIMESTAMP_FORMAT_CODE)
+    parsed_end = datetime.strptime(event['end_date'], TIMESTAMP_FORMAT_CODE)
+    if parsed_start > parsed_end:
         raise ValueError("Events ends before it starts")
     return parsed_start, parsed_end
-    
+
+def prepare_event_for_output(event):
+    output = dict(**event)
+    if "end_date" in output:
+        output["end_date"] = output["end_date"].strftime(TIMESTAMP_FORMAT_CODE)
+    if "start_date" in output:
+        output["start_date"] = output["start_date"].strftime(TIMESTAMP_FORMAT_CODE)
+    if "_id" in output: output["_id"] = str(output["_id"])
+    print(output)
+    return output
 
 @ensure_schema({
     "type": "object",
@@ -37,10 +48,6 @@ def validate_times_in_dict(event):
 })
 @ensure_logged_in_user()
 def find_events(event, context, user):
-    def prepare_event(evt):
-        evt["_id"] = str(evt["_id"])
-        return evt
-
     try:
         parsed_start, parsed_end = validate_times_in_dict(event)
     except Exception as e:
@@ -48,9 +55,9 @@ def find_events(event, context, user):
     events = util.coll('events')
     query = {"$and": [{"$or": [{"type": "public"},
                                {"attendees": {"$elemMatch": {"attendee": user["email"]}}}]},
-                      {"start_date": {"$lt": parsed_end}},
-                      {"end_date": {"$gt": parsed_end}}]}
-    relevant = [prepare_event(e) for e in events.find(query)]
+                      {"start_date": {"$gt": parsed_start}},
+                      {"end_date": {"$lt": parsed_end}}]}
+    relevant = [prepare_event_for_output(e) for e in events.find(query)]
     if not relevant:
         return {"statusCode": 404, "body": "No events found for the user in the given time frame"}
     return {"statusCode": 200, "body": relevant}
@@ -106,7 +113,7 @@ def invite_to_event(event, context, user, found_event):
 })
 @ensure_logged_in_user()
 @ensure_admin_user()
-def create_event(event, context):
+def create_event(event, context, user):
     try:
         parsed_start, parsed_end = validate_times_in_dict(event)
     except Exception as e:
@@ -114,13 +121,15 @@ def create_event(event, context):
 
     doc = {
         "name": event["name"],
-        "start_name": parsed_start,
-        "end_name": parsed_end,
+        "start_date": parsed_start,
+        "end_date": parsed_end,
         "event_type": event["event_type"]
     }
-    new_id = str(util.coll('events').insert_one(doc).inserted_id)
+    if event["event_type"] == "private":
+        doc["attendees"] = [{"attendee": user["email"], "role": "host"}]
+    new_id = util.coll('events').insert_one(doc).inserted_id
     doc["_id"] = new_id
-    return {"statusCode": 200, "body": doc}
+    return {"statusCode": 200, "body": prepare_event_for_output(doc)}
 
 @ensure_schema({
     "type": "object",
